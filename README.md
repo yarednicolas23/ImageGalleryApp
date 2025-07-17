@@ -48,3 +48,54 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+
+
+
+🔍 Diagnóstico actual:
+Se ha identificado que el error que se dispara en estos casos es un error 440, que internamente corresponde a expiredSession.
+
+Se concluye que la sesión asociada al usuario ha expirado en algún punto del proceso de reautenticación automática vía PWLS.
+
+Se ha probado invocar de forma explícita el método interno renewSessionId() para restaurar la sesión.
+
+
+
+Resultado:
+La sesión parece renovarse correctamente, pero los módulos mencionados siguen retornando error, lo cual indica que la sesión renovada no se está propagando correctamente o no es reconocida por todos los servicios/módulos afectados.
+
+🧭 Próximos pasos en la solución:
+Validación del flujo de propagación del renewSessionId():
+
+Verificar si efectivamente se actualiza el token/sessionId en todos los contextos (local, storage seguro, headers de red).
+
+Asegurar que el nuevo sessionId sea referenciado correctamente por los módulos MBaaS y otros servicios afectados.
+
+Revisión de logs centralizados y trazabilidad distribuida:
+
+Correlacionar la sesión antes y después del renewSessionId() para identificar inconsistencias en headers o sesiones paralelas.
+
+Revisar si los servicios afectados están validando tokens que ya no están vigentes.
+
+Validaciones de entorno (staging o QA):
+
+Reproducir el flujo completo en entorno de pruebas, confirmando estado de sesión en cada paso.
+
+Incluir escenarios con más de un cambio de usuario consecutivo.
+
+Coordinación con equipos de MBaaS y servicios de backend:
+
+Escalar el incidente con evidencia de logs donde el sessionId válido no es reconocido.
+
+Solicitar revisión del manejo de sesiones en cada módulo impactado.
+
+Plan de contingencia (en evaluación):
+
+Considerar invalidar la sesión al hacer “Cambiar usuario” para forzar un flujo limpio.
+
+Alternativa temporal: mostrar mensaje claro al usuario y bloquear el flujo si se detecta un sessionId expirado.
+
+📌 Estado actual:
+🔄 Diagnóstico parcial completo. Se ha identificado la causa probable del error como una sesión expirada y se está aplicando renovación de sesión.
+
+🚧 Solución en progreso. Persisten errores en módulos críticos, por lo cual seguimos validando la correcta propagación del sessionId y el comportamiento de los servicios backend involucrados.
